@@ -16,27 +16,32 @@ package com.google.firebase.codelab.mlkit;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.Camera;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.codelab.mlkit.GraphicOverlay.Graphic;
 import com.google.firebase.ml.common.FirebaseMLException;
 import com.google.firebase.ml.custom.FirebaseModelDataType;
 import com.google.firebase.ml.custom.FirebaseModelInputOutputOptions;
@@ -52,34 +57,44 @@ import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.document.FirebaseVisionDocumentText;
 import com.google.firebase.ml.vision.document.FirebaseVisionDocumentTextRecognizer;
-import com.google.firebase.ml.vision.face.FirebaseVisionFace;
-import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector;
-import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.text.SimpleDateFormat;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
     private static final String TAG = "MainActivity";
     private ImageView mImageView;
     private Button mTextButton;
-    private Button mFaceButton;
-    private Button mCloudButton;
-    private Button mRunCustomModelButton;
+    private Button mCaptureButton;
     private Bitmap mSelectedImage;
-    private GraphicOverlay mGraphicOverlay;
+    private Camera mCamera;
+    private Button clearButton;
+    private CameraPreview mPreview;
+    private TextView saIdTv;
+    private String latestFilePath = "";
+    private String rawString="";
+
+    public static final int MEDIA_TYPE_IMAGE = 1;
+
     // Max width (portrait mode)
     private Integer mImageMaxWidth;
     // Max height (portrait mode)
@@ -131,54 +146,129 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private FirebaseModelInputOutputOptions mDataOptions;
 
     @Override
+    public View onCreateView(View parent, String name, Context context, AttributeSet attrs) {
+        return super.onCreateView(parent, name, context, attrs);
+    }
+
+
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mCamera = getCameraInstance();
+
+        mPreview = new CameraPreview(this, mCamera);
+        FrameLayout preview = findViewById(R.id.camera_preview);
+        preview.addView(mPreview);
+
+        final Camera.PictureCallback mPicture = new Camera.PictureCallback() {
+
+            @Override
+            public void onPictureTaken(byte[] data, Camera camera) {
+
+                File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
+                if (pictureFile == null){
+                    Log.d(TAG, "Error creating media file, check storage permissions");
+                    return;
+                }
+
+                try {
+                    FileOutputStream fos = new FileOutputStream(pictureFile);
+                    fos.write(data);
+                    fos.close();
+                    latestFilePath = pictureFile.getAbsolutePath();
+                } catch (FileNotFoundException e) {
+                    Log.d(TAG, "File not found: " + e.getMessage());
+                } catch (IOException e) {
+                    Log.d(TAG, "Error accessing file: " + e.getMessage());
+                }
+            }
+        };
+
+        mCaptureButton = findViewById(R.id.capture_button);
+        mCaptureButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        // get an image from the camera
+                        mCamera.takePicture(null, null, mPicture);
+                    }
+                }
+        );
+
+        saIdTv = findViewById(R.id.saIdTv);
+
+    clearButton = findViewById(R.id.clearImageButton);
+    clearButton.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            mPreview = new CameraPreview(getApplicationContext(), mCamera);
+            FrameLayout preview = findViewById(R.id.camera_preview);
+            preview.addView(mPreview);
+        }
+    });
+
         mImageView = findViewById(R.id.image_view);
 
         mTextButton = findViewById(R.id.button_text);
-        mFaceButton = findViewById(R.id.button_face);
-        mCloudButton = findViewById(R.id.button_cloud_text);
-        mRunCustomModelButton = findViewById(R.id.button_run_custom_model);
 
-        mGraphicOverlay = findViewById(R.id.graphic_overlay);
         mTextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 runTextRecognition();
             }
         });
-        mFaceButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                runFaceContourDetection();
-            }
-        });
-        mCloudButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                runCloudTextRecognition();
-            }
-        });
-        mRunCustomModelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                runModelInference();
-            }
-        });
-        Spinner dropdown = findViewById(R.id.spinner);
+
         String[] items = new String[]{"Test Image 1 (Text)", "Test Image 2 (Text)", "Test Image 3" +
                 " (Face)", "Test Image 4 (Object)", "Test Image 5 (Object)"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout
                 .simple_spinner_dropdown_item, items);
-        dropdown.setAdapter(adapter);
-        dropdown.setOnItemSelectedListener(this);
         initCustomModel();
     }
 
+    /** Create a file Uri for saving an image or video */
+    private static Uri getOutputMediaFileUri(int type){
+        return Uri.fromFile(getOutputMediaFile(type));
+    }
+
+    /** Create a File for saving an image or video */
+    private static File getOutputMediaFile(int type){
+        // To be safe, you should check that the SDCard is mounted
+        // using Environment.getExternalStorageState() before doing this.
+
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES), "MyCameraApp");
+        // This location works best if you want the created images to be shared
+        // between applications and persist after your app has been uninstalled.
+
+        // Create the storage directory if it does not exist
+        if (! mediaStorageDir.exists()){
+            if (! mediaStorageDir.mkdirs()){
+                Log.d("MyCameraApp", "failed to create directory");
+                return null;
+            }
+        }
+
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        File mediaFile;
+        if (type == MEDIA_TYPE_IMAGE){
+            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                    "IMG_"+ timeStamp + ".jpg");
+        } else {
+            return null;
+        }
+
+        return mediaFile;
+    }
+
+
+
     private void runTextRecognition() {
-        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(mSelectedImage);
+        Bitmap bitmapImage = BitmapFactory.decodeFile(latestFilePath);
+        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmapImage);
         FirebaseVisionTextRecognizer recognizer = FirebaseVision.getInstance()
                 .getOnDeviceTextRecognizer();
         mTextButton.setEnabled(false);
@@ -187,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         new OnSuccessListener<FirebaseVisionText>() {
                             @Override
                             public void onSuccess(FirebaseVisionText texts) {
-                                mTextButton.setEnabled(true);
+                                //mTextButton.setEnabled(true);
                                 processTextRecognitionResult(texts);
                             }
                         })
@@ -196,76 +286,38 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             @Override
                             public void onFailure(@NonNull Exception e) {
                                 // Task failed with an exception
-                                mTextButton.setEnabled(true);
+                                //mTextButton.setEnabled(true);
                                 e.printStackTrace();
                             }
                         });
     }
 
     private void processTextRecognitionResult(FirebaseVisionText texts) {
+        rawString = "";
         List<FirebaseVisionText.TextBlock> blocks = texts.getTextBlocks();
         if (blocks.size() == 0) {
             showToast("No text found");
             return;
         }
-        mGraphicOverlay.clear();
-        for (int i = 0; i < blocks.size(); i++) {
-            List<FirebaseVisionText.Line> lines = blocks.get(i).getLines();
-            for (int j = 0; j < lines.size(); j++) {
-                List<FirebaseVisionText.Element> elements = lines.get(j).getElements();
-                for (int k = 0; k < elements.size(); k++) {
-                    Graphic textGraphic = new TextGraphic(mGraphicOverlay, elements.get(k));
-                    mGraphicOverlay.add(textGraphic);
 
-                }
-            }
-        }
+//        for (int i = 0; i < blocks.size(); i++) {
+//            List<FirebaseVisionText.Line> lines = blocks.get(i).getLines();
+//            for (int j = 0; j < lines.size(); j++) {
+//                List<FirebaseVisionText.Element> elements = lines.get(j).getElements();
+//                for (int k = 0; k < elements.size(); k++) {
+//                    Log.d("element", elements.get(k).getText());
+//                    //if (elements.get(k).getText().equalsIgnoreCase(""))
+//                    //rawString = rawString + elements.get(k).getText();
+//                }
+//            }
+//        }
+        showResult(texts.getText());
     }
 
-    private void runFaceContourDetection() {
-        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(mSelectedImage);
-        FirebaseVisionFaceDetectorOptions options =
-                new FirebaseVisionFaceDetectorOptions.Builder()
-                        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.FAST)
-                        .setContourMode(FirebaseVisionFaceDetectorOptions.ALL_CONTOURS)
-                        .build();
-
-        mFaceButton.setEnabled(false);
-        FirebaseVisionFaceDetector detector = FirebaseVision.getInstance().getVisionFaceDetector(options);
-        detector.detectInImage(image)
-                .addOnSuccessListener(
-                        new OnSuccessListener<List<FirebaseVisionFace>>() {
-                            @Override
-                            public void onSuccess(List<FirebaseVisionFace> faces) {
-                                mFaceButton.setEnabled(true);
-                                processFaceContourDetectionResult(faces);
-                            }
-                        })
-                .addOnFailureListener(
-                        new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                // Task failed with an exception
-                                mFaceButton.setEnabled(true);
-                                e.printStackTrace();
-                            }
-                        });
-
-    }
-
-    private void processFaceContourDetectionResult(List<FirebaseVisionFace> faces) {
-        // Task completed successfully
-        if (faces.size() == 0) {
-            showToast("No face found");
-            return;
-        }
-        mGraphicOverlay.clear();
-        for (int i = 0; i < faces.size(); ++i) {
-            FirebaseVisionFace face = faces.get(i);
-            FaceContourGraphic faceGraphic = new FaceContourGraphic(mGraphicOverlay);
-            mGraphicOverlay.add(faceGraphic);
-            faceGraphic.updateFace(face);
-        }
+    private void showResult(String text) {
+        String result = findSAID(text);
+        Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
+       // saIdTv.setText(result);
     }
 
     private void initCustomModel() {
@@ -337,10 +389,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                                     byte[][] labelProbArray = task.getResult()
                                             .<byte[][]>getOutput(0);
                                     List<String> topLabels = getTopLabels(labelProbArray);
-                                    mGraphicOverlay.clear();
-                                    GraphicOverlay.Graphic labelGraphic = new LabelGraphic
-                                            (mGraphicOverlay, topLabels);
-                                    mGraphicOverlay.add(labelGraphic);
                                     return topLabels;
                                 }
                             });
@@ -352,7 +400,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     private void runCloudTextRecognition() {
-        mCloudButton.setEnabled(false);
         FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(mSelectedImage);
         FirebaseVisionDocumentTextRecognizer recognizer = FirebaseVision.getInstance()
                 .getCloudDocumentTextRecognizer();
@@ -361,7 +408,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         new OnSuccessListener<FirebaseVisionDocumentText>() {
                             @Override
                             public void onSuccess(FirebaseVisionDocumentText texts) {
-                                mCloudButton.setEnabled(true);
                                 processCloudTextRecognitionResult(texts);
                             }
                         })
@@ -370,7 +416,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             @Override
                             public void onFailure(@NonNull Exception e) {
                                 // Task failed with an exception
-                                mCloudButton.setEnabled(true);
                                 e.printStackTrace();
                             }
                         });
@@ -382,16 +427,12 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             showToast("No text found");
             return;
         }
-        mGraphicOverlay.clear();
         List<FirebaseVisionDocumentText.Block> blocks = text.getBlocks();
         for (int i = 0; i < blocks.size(); i++) {
             List<FirebaseVisionDocumentText.Paragraph> paragraphs = blocks.get(i).getParagraphs();
             for (int j = 0; j < paragraphs.size(); j++) {
                 List<FirebaseVisionDocumentText.Word> words = paragraphs.get(j).getWords();
                 for (int l = 0; l < words.size(); l++) {
-                    CloudTextGraphic cloudDocumentTextGraphic = new CloudTextGraphic(mGraphicOverlay,
-                            words.get(l));
-                    mGraphicOverlay.add(cloudDocumentTextGraphic);
                 }
             }
         }
@@ -511,7 +552,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
     public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
-        mGraphicOverlay.clear();
         switch (position) {
             case 0:
                 mSelectedImage = getBitmapFromAsset(this, "20190112_154016.jpg");
@@ -576,5 +616,62 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
 
         return bitmap;
+    }
+
+    /** Check if this device has a camera */
+    private boolean checkCameraHardware(Context context) {
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
+            // this device has a camera
+            return true;
+        } else {
+            // no camera on this device
+            return false;
+        }
+    }
+
+    /** A safe way to get an instance of the Camera object. */
+    public static Camera getCameraInstance(){
+        Camera c = null;
+        try {
+            c = Camera.open(); // attempt to get a Camera instance
+        }
+        catch (Exception e){
+            // Camera is not available (in use or does not exist)
+        }
+        return c; // returns null if camera is unavailable
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        releaseCamera();              // release the camera immediately on pause event
+    }
+
+    private void releaseCamera(){
+        if (mCamera != null){
+            mCamera.release();        // release the camera for other applications
+            mCamera = null;
+        }
+    }
+
+    public static String findSAID(String text){
+        String line = text.replaceAll("\\W","");
+
+        String pattern = "(\\d{6}\\s*\\d{4}\\s*\\d{2}\\s*\\d)";
+
+        // Create a Pattern object
+        Pattern r = Pattern.compile(pattern);
+
+        // Now create matcher object.
+        Matcher m = r.matcher(line);
+        if (m.find( )) {
+            System.out.println("Found value: " + m.group(0) );
+            String result = m.group(0).replaceAll("\\s+","");
+            System.out.println("Final result: " + result );
+            return result;
+        }else {
+            System.out.println("NO MATCH");
+            return "";
+        }
     }
 }
