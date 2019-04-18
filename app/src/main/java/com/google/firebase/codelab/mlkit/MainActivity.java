@@ -102,7 +102,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     /**
      * Name of the model file hosted with Firebase.
      */
-    private static final String HOSTED_MODEL_NAME = "cloud_model_1";
+//    private static final String HOSTED_MODEL_NAME = "cloud_model_1";
     private static final String LOCAL_MODEL_ASSET = "mobilenet_v1_1.0_224_quant.tflite";
     /**
      * Name of the label file stored in Assets.
@@ -206,6 +206,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         public void onClick(View v) {
             mPreview = new CameraPreview(getApplicationContext(), mCamera);
             FrameLayout preview = findViewById(R.id.camera_preview);
+            preview.removeAllViews();
             preview.addView(mPreview);
         }
     });
@@ -277,7 +278,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         new OnSuccessListener<FirebaseVisionText>() {
                             @Override
                             public void onSuccess(FirebaseVisionText texts) {
-                                //mTextButton.setEnabled(true);
+                                mTextButton.setEnabled(true);
                                 processTextRecognitionResult(texts);
                             }
                         })
@@ -331,27 +332,27 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                             .setInputFormat(0, FirebaseModelDataType.BYTE, inputDims)
                             .setOutputFormat(0, FirebaseModelDataType.BYTE, outputDims)
                             .build();
-            FirebaseModelDownloadConditions conditions = new FirebaseModelDownloadConditions
-                    .Builder()
-                    .requireWifi()
-                    .build();
-            FirebaseCloudModelSource cloudSource = new FirebaseCloudModelSource.Builder
-                    (HOSTED_MODEL_NAME)
-                    .enableModelUpdates(true)
-                    .setInitialDownloadConditions(conditions)
-                    .setUpdatesDownloadConditions(conditions)  // You could also specify
-                    // different conditions
-                    // for updates
-                    .build();
+//            FirebaseModelDownloadConditions conditions = new FirebaseModelDownloadConditions
+//                    .Builder()
+//                    .requireWifi()
+//                    .build();
+//            FirebaseCloudModelSource cloudSource = new FirebaseCloudModelSource.Builder
+//                    (HOSTED_MODEL_NAME)
+//                    .enableModelUpdates(true)
+//                    .setInitialDownloadConditions(conditions)
+//                    .setUpdatesDownloadConditions(conditions)  // You could also specify
+//                    // different conditions
+//                    // for updates
+//                    .build();
             FirebaseLocalModelSource localSource =
                     new FirebaseLocalModelSource.Builder("asset")
                             .setAssetFilePath(LOCAL_MODEL_ASSET).build();
             FirebaseModelManager manager = FirebaseModelManager.getInstance();
-            manager.registerCloudModelSource(cloudSource);
+//            manager.registerCloudModelSource(cloudSource);
             manager.registerLocalModelSource(localSource);
             FirebaseModelOptions modelOptions =
                     new FirebaseModelOptions.Builder()
-                            .setCloudModelName(HOSTED_MODEL_NAME)
+//                            .setCloudModelName(HOSTED_MODEL_NAME)
                             .setLocalModelName("asset")
                             .build();
             mInterpreter = FirebaseModelInterpreter.getInstance(modelOptions);
@@ -657,16 +658,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     public static String findSAID(String text){
         String line = text.replaceAll("\\W","");
 
-        String pattern = "(\\d{6}\\s*\\d{4}\\s*\\d{2}\\s*\\d)";
-
+//        String pattern = "(\\d{6}\\s*\\d{4}\\s*\\d{2}\\s*\\d)";
+        String pattern = "(\\D)(\\d{2}[01]\\d[0123]\\d\\s*\\d{4}\\s*[01]\\d\\s*\\d*)";
         // Create a Pattern object
         Pattern r = Pattern.compile(pattern);
 
         // Now create matcher object.
         Matcher m = r.matcher(line);
-        if (m.find( )) {
-            System.out.println("Found value: " + m.group(0) );
-            String result = m.group(0).replaceAll("\\s+","");
+        if (m.find()) {
+            System.out.println("Found value: " + m.group(2) );
+            String result = m.group(2).replaceAll("\\s","");
             System.out.println("Final result: " + result );
             return result;
         }else {
