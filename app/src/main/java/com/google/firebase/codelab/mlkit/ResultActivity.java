@@ -38,7 +38,10 @@ public class ResultActivity extends AppCompatActivity {
             {
                 title.setText("Sorry, \nwe can not detect your South African ID");
             }
-            saIdTv.setText(saId);
+            String firstStr = saId.substring(0, 5);
+            String secondStr = saId.substring(6, 9);
+            String thirdStr =  saId.substring(10);
+            saIdTv.setText(String.format("%s %s %s", firstStr, secondStr, thirdStr));
         }
     }
 }
