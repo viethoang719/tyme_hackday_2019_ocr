@@ -16,15 +16,18 @@ package com.google.firebase.codelab.mlkit;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -80,7 +83,7 @@ import java.util.PriorityQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
+public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Void> implements AdapterView.OnItemSelectedListener {
     private static final String TAG = "MainActivity";
     private ImageView mImageView;
     private Button mTextButton;
@@ -92,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     private TextView saIdTv;
     private String latestFilePath = "";
     private String rawString="";
+    private ConstraintLayout loadingView;
 
     public static final int MEDIA_TYPE_IMAGE = 1;
 
@@ -194,13 +198,16 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                     public void onClick(View v) {
                         // get an image from the camera
                         mCamera.takePicture(null, null, mPicture);
+                        runTextRecognition();
                     }
                 }
         );
 
         saIdTv = findViewById(R.id.saIdTv);
+        clearButton = findViewById(R.id.clearImageButton);
+        loadingView = findViewById(R.id.loadingLayout);
+        loadingView.setVisibility(View.GONE);
 
-    clearButton = findViewById(R.id.clearImageButton);
     clearButton.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -210,8 +217,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             preview.addView(mPreview);
         }
     });
-
-        mImageView = findViewById(R.id.image_view);
 
         mTextButton = findViewById(R.id.button_text);
 
@@ -268,6 +273,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
 
     private void runTextRecognition() {
+        loadingView.setVisibility(View.VISIBLE);
         Bitmap bitmapImage = BitmapFactory.decodeFile(latestFilePath);
         FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmapImage);
         FirebaseVisionTextRecognizer recognizer = FirebaseVision.getInstance()
@@ -315,9 +321,24 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         showResult(texts.getText());
     }
 
+    private void goToResultActivity(String result) {
+        loadingView.setVisibility(View.GONE);
+        String SAID_RESULT = "SAID";
+        try {
+            Intent mIntent = new Intent(this, ResultActivity.class);
+            Bundle extras = mIntent.getExtras();
+            extras.putString(SAID_RESULT, result);
+            startActivity(mIntent);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void showResult(String text) {
         String result = findSAID(text);
-        Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
+
+        goToResultActivity(result);
+        //Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
        // saIdTv.setText(result);
     }
 

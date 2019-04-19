@@ -4,27 +4,152 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/ic_main_background"
     tools:context=".MainActivity">
 
-    <ImageView
-        android:id="@+id/image_view"
+
+    <include
+        android:id="@+id/loadingLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="fitStart"
-        app:layout_constraintTop_toBottomOf="parent"
-        app:layout_constraintBottom_toTopOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
+        android:background="@android:color/background_dark"
+        android:alpha="0.85"
+        android:visibility="gone"
+        layout="@layout/loading_layout"/>
+
+    <ImageView
+        android:id="@+id/rightBarLayout"
+        android:layout_marginTop="67dp"
+        android:layout_width="120dp"
+        android:layout_height="match_parent"
+        android:background="@android:color/background_dark"
+        android:alpha="0.85"
+        android:elevation="2dp"
         app:layout_constraintRight_toRightOf="parent"
-        android:contentDescription="@string/select_image_for_text_recognition" />
+         />
+
+    <ImageView
+        android:id="@+id/rightFirstLine"
+        android:elevation="2dp"
+        app:layout_constraintTop_toTopOf="@id/topSecondLine"
+        android:layout_marginStart="5dp"
+        android:layout_height="70dp"
+        android:layout_width="5dp"
+        android:background="#ffcc00"
+        app:layout_constraintLeft_toLeftOf="@id/rightBarLayout" />
+
+    <ImageView
+        android:id="@+id/rightSecondLine"
+        android:elevation="2dp"
+        app:layout_constraintBottom_toBottomOf="@id/bottomSecondLine"
+        android:layout_marginStart="5dp"
+        android:layout_height="70dp"
+        android:layout_width="5dp"
+        android:background="#ffcc00"
+        app:layout_constraintLeft_toLeftOf="@id/rightBarLayout" />
+
+    <ImageView
+        android:id="@+id/leftBarLayout"
+        android:elevation="2dp"
+        android:layout_marginTop="67dp"
+        android:layout_width="120dp"
+        android:layout_height="match_parent"
+        android:background="@android:color/background_dark"
+        android:alpha="0.85"
+        app:layout_constraintLeft_toLeftOf="parent"
+         />
+
+    <ImageView
+        android:id="@+id/lefFirstLine"
+        android:elevation="2dp"
+        app:layout_constraintTop_toTopOf="@id/topFirstLine"
+        android:layout_marginEnd="5dp"
+        android:layout_height="70dp"
+        android:layout_width="5dp"
+        android:background="#ffcc00"
+        app:layout_constraintRight_toRightOf="@id/leftBarLayout" />
+
+    <ImageView
+        android:id="@+id/lefSecondLine"
+        android:elevation="2dp"
+        app:layout_constraintBottom_toBottomOf="@id/bottomFirstLine"
+        android:layout_marginEnd="5dp"
+        android:layout_height="70dp"
+        android:layout_width="5dp"
+        android:background="#ffcc00"
+        app:layout_constraintRight_toRightOf="@id/leftBarLayout"/>
+
+    <ImageView
+        android:id="@+id/bottomBarLayout"
+        android:elevation="2dp"
+        android:layout_width="0dp"
+        android:layout_height="120dp"
+        android:background="@android:color/background_dark"
+        android:alpha="0.85"
+        app:layout_constraintLeft_toRightOf="@id/leftBarLayout"
+        app:layout_constraintRight_toLeftOf="@id/rightBarLayout"
+        app:layout_constraintBottom_toBottomOf="parent"
+         />
+
+    <ImageView
+        android:id="@+id/bottomFirstLine"
+        android:elevation="2dp"
+        app:layout_constraintTop_toTopOf="@id/bottomBarLayout"
+        android:layout_marginTop="5dp"
+        android:layout_height="5dp"
+        android:layout_width="70dp"
+        android:background="#ffcc00"
+        app:layout_constraintLeft_toRightOf="@id/lefSecondLine" />
+
+    <ImageView
+        android:id="@+id/bottomSecondLine"
+        android:elevation="2dp"
+        app:layout_constraintTop_toTopOf="@id/bottomBarLayout"
+        android:layout_marginTop="5dp"
+        android:layout_height="5dp"
+        android:layout_width="70dp"
+        android:background="#ffcc00"
+        app:layout_constraintRight_toLeftOf="@id/rightSecondLine" />
+
+    <ImageView
+        android:id="@+id/topBarLayout"
+        android:elevation="2dp"
+        android:layout_width="0dp"
+        android:layout_height="120dp"
+        android:background="@android:color/background_dark"
+        android:layout_marginTop="67dp"
+        android:alpha="0.85"
+        app:layout_constraintLeft_toRightOf="@id/leftBarLayout"
+        app:layout_constraintRight_toLeftOf="@id/rightBarLayout"
+        app:layout_constraintTop_toTopOf="parent"
+         />
+
+    <ImageView
+        android:id="@+id/topFirstLine"
+        android:elevation="2dp"
+        app:layout_constraintBottom_toBottomOf="@id/topBarLayout"
+        android:layout_marginBottom="5dp"
+        android:layout_height="5dp"
+        android:layout_width="70dp"
+        android:background="#ffcc00"
+        app:layout_constraintLeft_toRightOf="@id/lefFirstLine" />
+
+    <ImageView
+        android:id="@+id/topSecondLine"
+        android:elevation="2dp"
+        app:layout_constraintBottom_toBottomOf="@id/topBarLayout"
+        android:layout_marginBottom="5dp"
+        android:layout_height="5dp"
+        android:layout_width="70dp"
+        android:background="#ffcc00"
+        app:layout_constraintRight_toLeftOf="@id/rightFirstLine" />
+
     <FrameLayout
         android:id="@+id/camera_preview"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        app:layout_constraintTop_toTopOf="@id/image_view"
-        app:layout_constraintBottom_toBottomOf="@id/image_view"
-        app:layout_constraintLeft_toLeftOf="@id/image_view"
-        app:layout_constraintRight_toRightOf="@id/image_view"
-        android:layout_alignParentStart="true" />
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="67dp" />
 
     <TextView
         android:id="@+id/saIdTv"
@@ -45,11 +170,15 @@
 
     <Button
         android:id="@+id/capture_button"
-        android:text="@string/capture_button"
-        android:layout_width="0dp"
-        android:layout_height="55dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/circle_button"
+        android:layout_centerInParent="true"
+        app:layout_constraintTop_toTopOf="@id/bottomBarLayout"
+        app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        android:layout_marginTop="20dp"
+        />
 
     <Button
         android:id="@+id/clearImageButton"
