@@ -32,6 +32,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Pair;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -53,9 +54,7 @@ import com.google.firebase.ml.custom.FirebaseModelInterpreter;
 import com.google.firebase.ml.custom.FirebaseModelManager;
 import com.google.firebase.ml.custom.FirebaseModelOptions;
 import com.google.firebase.ml.custom.FirebaseModelOutputs;
-import com.google.firebase.ml.custom.model.FirebaseCloudModelSource;
 import com.google.firebase.ml.custom.model.FirebaseLocalModelSource;
-import com.google.firebase.ml.custom.model.FirebaseModelDownloadConditions;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.document.FirebaseVisionDocumentText;
@@ -65,8 +64,6 @@ import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -83,19 +80,16 @@ import java.util.PriorityQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Void> implements AdapterView.OnItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
     private static final String TAG = "MainActivity";
     private ImageView mImageView;
-    private Button mTextButton;
     private Button mCaptureButton;
     private Bitmap mSelectedImage;
     private Camera mCamera;
-    private Button clearButton;
     private CameraPreview mPreview;
     private TextView saIdTv;
     private String latestFilePath = "";
-    private String rawString="";
-    private ConstraintLayout loadingView;
+    private String rawString = "";
 
     public static final int MEDIA_TYPE_IMAGE = 1;
 
@@ -155,7 +149,6 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
     }
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -172,22 +165,8 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
             @Override
             public void onPictureTaken(byte[] data, Camera camera) {
 
-                File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
-                if (pictureFile == null){
-                    Log.d(TAG, "Error creating media file, check storage permissions");
-                    return;
-                }
-
-                try {
-                    FileOutputStream fos = new FileOutputStream(pictureFile);
-                    fos.write(data);
-                    fos.close();
-                    latestFilePath = pictureFile.getAbsolutePath();
-                } catch (FileNotFoundException e) {
-                    Log.d(TAG, "File not found: " + e.getMessage());
-                } catch (IOException e) {
-                    Log.d(TAG, "Error accessing file: " + e.getMessage());
-                }
+                final Bitmap book = BitmapFactory.decodeByteArray(data, 0, data.length, null);
+                runTextRecognition(book);
             }
         };
 
@@ -198,34 +177,11 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
                     public void onClick(View v) {
                         // get an image from the camera
                         mCamera.takePicture(null, null, mPicture);
-                        runTextRecognition();
                     }
                 }
         );
 
         saIdTv = findViewById(R.id.saIdTv);
-        clearButton = findViewById(R.id.clearImageButton);
-        loadingView = findViewById(R.id.loadingLayout);
-        loadingView.setVisibility(View.GONE);
-
-    clearButton.setOnClickListener(new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            mPreview = new CameraPreview(getApplicationContext(), mCamera);
-            FrameLayout preview = findViewById(R.id.camera_preview);
-            preview.removeAllViews();
-            preview.addView(mPreview);
-        }
-    });
-
-        mTextButton = findViewById(R.id.button_text);
-
-        mTextButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                runTextRecognition();
-            }
-        });
 
         String[] items = new String[]{"Test Image 1 (Text)", "Test Image 2 (Text)", "Test Image 3" +
                 " (Face)", "Test Image 4 (Object)", "Test Image 5 (Object)"};
@@ -234,13 +190,17 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
         initCustomModel();
     }
 
-    /** Create a file Uri for saving an image or video */
-    private static Uri getOutputMediaFileUri(int type){
+    /**
+     * Create a file Uri for saving an image or video
+     */
+    private static Uri getOutputMediaFileUri(int type) {
         return Uri.fromFile(getOutputMediaFile(type));
     }
 
-    /** Create a File for saving an image or video */
-    private static File getOutputMediaFile(int type){
+    /**
+     * Create a File for saving an image or video
+     */
+    private static File getOutputMediaFile(int type) {
         // To be safe, you should check that the SDCard is mounted
         // using Environment.getExternalStorageState() before doing this.
 
@@ -250,8 +210,8 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
         // between applications and persist after your app has been uninstalled.
 
         // Create the storage directory if it does not exist
-        if (! mediaStorageDir.exists()){
-            if (! mediaStorageDir.mkdirs()){
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
                 Log.d("MyCameraApp", "failed to create directory");
                 return null;
             }
@@ -260,9 +220,9 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
         // Create a media file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         File mediaFile;
-        if (type == MEDIA_TYPE_IMAGE){
+        if (type == MEDIA_TYPE_IMAGE) {
             mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "IMG_"+ timeStamp + ".jpg");
+                    "IMG_" + timeStamp + ".jpg");
         } else {
             return null;
         }
@@ -271,20 +231,18 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
     }
 
 
-
-    private void runTextRecognition() {
-        loadingView.setVisibility(View.VISIBLE);
-        Bitmap bitmapImage = BitmapFactory.decodeFile(latestFilePath);
+    private void runTextRecognition(Bitmap bitmapImage) {
+        FrameLayout preview = findViewById(R.id.camera_preview);
+        View loading = LayoutInflater.from(this).inflate(R.layout.loading_layout, null);
+        preview.addView(loading);
         FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmapImage);
         FirebaseVisionTextRecognizer recognizer = FirebaseVision.getInstance()
                 .getOnDeviceTextRecognizer();
-        mTextButton.setEnabled(false);
         recognizer.processImage(image)
                 .addOnSuccessListener(
                         new OnSuccessListener<FirebaseVisionText>() {
                             @Override
                             public void onSuccess(FirebaseVisionText texts) {
-                                mTextButton.setEnabled(true);
                                 processTextRecognitionResult(texts);
                             }
                         })
@@ -322,14 +280,12 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
     }
 
     private void goToResultActivity(String result) {
-        loadingView.setVisibility(View.GONE);
         String SAID_RESULT = "SAID";
         try {
             Intent mIntent = new Intent(this, ResultActivity.class);
-            Bundle extras = mIntent.getExtras();
-            extras.putString(SAID_RESULT, result);
+            mIntent.putExtra(SAID_RESULT, result);
             startActivity(mIntent);
-        } catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -339,7 +295,7 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
 
         goToResultActivity(result);
         //Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
-       // saIdTv.setText(result);
+        // saIdTv.setText(result);
     }
 
     private void initCustomModel() {
@@ -640,9 +596,11 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
         return bitmap;
     }
 
-    /** Check if this device has a camera */
+    /**
+     * Check if this device has a camera
+     */
     private boolean checkCameraHardware(Context context) {
-        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
             // this device has a camera
             return true;
         } else {
@@ -651,13 +609,14 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
         }
     }
 
-    /** A safe way to get an instance of the Camera object. */
-    public static Camera getCameraInstance(){
+    /**
+     * A safe way to get an instance of the Camera object.
+     */
+    public static Camera getCameraInstance() {
         Camera c = null;
         try {
             c = Camera.open(); // attempt to get a Camera instance
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             // Camera is not available (in use or does not exist)
         }
         return c; // returns null if camera is unavailable
@@ -669,15 +628,15 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
         releaseCamera();              // release the camera immediately on pause event
     }
 
-    private void releaseCamera(){
-        if (mCamera != null){
+    private void releaseCamera() {
+        if (mCamera != null) {
             mCamera.release();        // release the camera for other applications
             mCamera = null;
         }
     }
 
-    public static String findSAID(String text){
-        String line = text.replaceAll("\\W","");
+    public static String findSAID(String text) {
+        String line = text.replaceAll("\\W", "");
 
 //        String pattern = "(\\d{6}\\s*\\d{4}\\s*\\d{2}\\s*\\d)";
         String pattern = "(\\D)(\\d{2}[01]\\d[0123]\\d\\s*\\d{4}\\s*[01]\\d\\s*\\d*)";
@@ -687,11 +646,11 @@ public class MainActivity extends AppCompatActivity, AsyncTask<Void, Integer, Vo
         // Now create matcher object.
         Matcher m = r.matcher(line);
         if (m.find()) {
-            System.out.println("Found value: " + m.group(2) );
-            String result = m.group(2).replaceAll("\\s","");
-            System.out.println("Final result: " + result );
+            System.out.println("Found value: " + m.group(2));
+            String result = m.group(2).replaceAll("\\s", "");
+            System.out.println("Final result: " + result);
             return result;
-        }else {
+        } else {
             System.out.println("NO MATCH");
             return "";
         }

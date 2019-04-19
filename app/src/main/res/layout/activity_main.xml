@@ -7,16 +7,6 @@
     android:background="@drawable/ic_main_background"
     tools:context=".MainActivity">
 
-
-    <include
-        android:id="@+id/loadingLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/background_dark"
-        android:alpha="0.85"
-        android:visibility="gone"
-        layout="@layout/loading_layout"/>
-
     <ImageView
         android:id="@+id/rightBarLayout"
         android:layout_marginTop="67dp"
@@ -160,13 +150,6 @@
         android:textAlignment="center"
         tools:text="213124234234"
         app:layout_constraintBottom_toTopOf="parent" />
-    <Button
-        android:id="@+id/button_text"
-        android:text="@string/find_text_button"
-        android:layout_width="0dp"
-        android:layout_height="55dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
 
     <Button
         android:id="@+id/capture_button"
@@ -180,11 +163,4 @@
         android:layout_marginTop="20dp"
         />
 
-    <Button
-        android:id="@+id/clearImageButton"
-        android:text="CLEAR"
-        android:layout_width="0dp"
-        android:layout_height="55dp"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
 </android.support.constraint.ConstraintLayout>

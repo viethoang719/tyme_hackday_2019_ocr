@@ -2,9 +2,7 @@
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@android:color/background_dark"
-    android:alpha="0.85">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <ProgressBar
         android:layout_width="100dp"
