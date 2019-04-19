@@ -261,8 +261,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         rawString = "";
         List<FirebaseVisionText.TextBlock> blocks = texts.getTextBlocks();
         if (blocks.size() == 0) {
-            showToast("No text found");
-            return;
+            showResult("");
+        }else{
+            showResult(texts.getText());
         }
 
 //        for (int i = 0; i < blocks.size(); i++) {
@@ -276,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 //                }
 //            }
 //        }
-        showResult(texts.getText());
+
     }
 
     private void goToResultActivity(String result) {

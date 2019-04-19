@@ -28,6 +28,6 @@ public class WelcomeActivity extends AppCompatActivity {
             }
         });
         title = findViewById(R.id.titleTv);
-        title.setText("Hi Trang, Let's scan your \n South African ID Card");
+        title.setText("Let's scan your \n South African ID Book");
     }
 }

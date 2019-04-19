@@ -34,9 +34,9 @@ public class ResultActivity extends AppCompatActivity {
 
         if (getIntent().getExtras() != null) {
             String saId = getIntent().getExtras().getString(SAID_RESULT);
-            if (saId == "")
+            if (saId.length() <= 1)
             {
-                title.setText("Sorry, we can not detect your SAID");
+                title.setText("Sorry, \nwe can not detect your South African ID");
             }
             saIdTv.setText(saId);
         }
