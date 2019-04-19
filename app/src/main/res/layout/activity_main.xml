@@ -153,9 +153,10 @@
 
     <Button
         android:id="@+id/capture_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/circle_button"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+
+        android:background="@drawable/ic_button_capture"
         android:layout_centerInParent="true"
         app:layout_constraintTop_toTopOf="@id/bottomBarLayout"
         app:layout_constraintLeft_toLeftOf="parent"

@@ -13,12 +13,14 @@ public class ResultActivity extends AppCompatActivity {
     public String SAID_RESULT = "SAID";
     Button reScanButton;
     TextView saIdTv;
+    TextView title;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_result);
 
+        title = findViewById(R.id.titleResult);
         reScanButton = findViewById(R.id.reScanButton);
         reScanButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -32,6 +34,10 @@ public class ResultActivity extends AppCompatActivity {
 
         if (getIntent().getExtras() != null) {
             String saId = getIntent().getExtras().getString(SAID_RESULT);
+            if (saId == "")
+            {
+                title.setText("Sorry, we can not detect your SAID");
+            }
             saIdTv.setText(saId);
         }
     }

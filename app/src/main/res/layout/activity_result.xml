@@ -8,6 +8,7 @@
 
 
     <TextView
+        android:id="@+id/titleResult"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Congratulation,\n Here your South African ID"
@@ -23,7 +24,7 @@
     android:id="@+id/saIdTvResult"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:textSize="30dp"
+    android:textSize="45dp"
     android:textStyle="bold"
     tools:text = "12334532534"
     app:layout_constraintTop_toTopOf="parent"
@@ -33,15 +34,15 @@
 
     <Button
         android:id="@+id/reScanButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAlignment="center"
-        android:text="RE-SCAN"
-        app:layout_constraintTop_toBottomOf="@id/saIdTvResult"
+        android:layout_width="198dp"
+        android:layout_height="63dp"
         android:layout_marginTop="70dp"
+        android:background="@drawable/ic_scan_now"
+        android:text="RE-SCAN"
+        android:textAlignment="center"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        />
+        app:layout_constraintTop_toBottomOf="@id/saIdTvResult" />
 
 
 </android.support.constraint.ConstraintLayout>
